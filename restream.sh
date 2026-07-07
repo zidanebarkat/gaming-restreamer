@@ -18,11 +18,18 @@ while true; do
     done
 
     echo "[restream] Getting stream URL via yt-dlp..."
-    STREAM_URL=$(yt-dlp -g --socket-timeout 15 \
-        "$YT_URL" 2>/tmp/yt-dlp.log | tail -1)
+    for attempt in 1 2 3 4 5; do
+        STREAM_URL=$(yt-dlp -g --socket-timeout 15 --retries 3 \
+            "$YT_URL" 2>/tmp/yt-dlp.log | tail -1)
+        if [ -n "$STREAM_URL" ] && ! echo "$STREAM_URL" | grep -qi "error\|warn"; then
+            break
+        fi
+        echo "[restream] Attempt $attempt failed, retrying in 5s..."
+        sleep 5
+    done
     if [ -z "$STREAM_URL" ] || echo "$STREAM_URL" | grep -qi "error\|warn"; then
-        echo "[restream] Failed: $(tail -1 /tmp/yt-dlp.log)"
-        sleep 30
+        echo "[restream] All attempts failed: $(tail -3 /tmp/yt-dlp.log)"
+        sleep 15
         continue
     fi
     echo "[restream] Stream URL: $STREAM_URL"
@@ -36,6 +43,6 @@ while true; do
         -f flv "$OUTPUT_URLS" \
         -loglevel info -stats 2>&1
 
-    echo "[restream] Stream ended, restarting in 10s..."
-    sleep 10
+    echo "[restream] Stream ended, restarting in 5s..."
+    sleep 5
 done
