@@ -1,24 +1,26 @@
 #!/bin/bash
 YT_URL="${YT_URL:-}"
+STREAM_URL="${STREAM_URL:-}"
 OUTPUT_URLS="${OUTPUT_URLS:-}"
 
 echo "[restream] Starting..."
 echo "[restream] YT_URL=$YT_URL"
+echo "[restream] STREAM_URL=$STREAM_URL"
 echo "[restream] OUTPUT_URLS=$OUTPUT_URLS"
 
-if [ -z "$YT_URL" ]; then echo "Missing YT_URL"; exit 1; fi
+if [ -z "$STREAM_URL" ] && [ -z "$YT_URL" ]; then echo "Missing YT_URL or STREAM_URL"; exit 1; fi
 if [ -z "$OUTPUT_URLS" ]; then echo "Missing OUTPUT_URLS"; exit 1; fi
 
 while true; do
-    echo "[restream] Getting stream URL via yt-dlp..."
-    COOKIES_OPT=""
-    [ -f /cookies.txt ] && COOKIES_OPT="--cookies /cookies.txt"
-    STREAM_URL=$(yt-dlp $COOKIES_OPT -g --socket-timeout 10 --extractor-args "youtube:player_client=android" "$YT_URL" 2>&1)
-    echo "[restream] yt-dlp result: $STREAM_URL"
-    if [ -z "$STREAM_URL" ] || echo "$STREAM_URL" | grep -qi "error\|fail\|unavailable"; then
-        echo "[restream] No valid stream URL, retrying in 30s..."
-        sleep 30
-        continue
+    if [ -z "$STREAM_URL" ] && [ -n "$YT_URL" ]; then
+        echo "[restream] Getting stream URL via yt-dlp..."
+        STREAM_URL=$(yt-dlp -g --socket-timeout 10 "$YT_URL" 2>&1)
+        echo "[restream] yt-dlp result: $STREAM_URL"
+        if [ -z "$STREAM_URL" ] || echo "$STREAM_URL" | grep -qi "error\|fail\|unavailable"; then
+            echo "[restream] No valid stream URL, retrying in 30s..."
+            sleep 30
+            continue
+        fi
     fi
 
     TEE_OUTPUT=""
