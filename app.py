@@ -33,10 +33,16 @@ def setup_cookies():
 
 def start_restream():
     yt_url = os.environ.get('YT_URL', '')
+    stream_url = os.environ.get('STREAM_URL', '')
     output_urls = os.environ.get('OUTPUT_URLS', '')
-    if not yt_url or not output_urls:
-        log("Missing YT_URL or OUTPUT_URLS")
+    if not stream_url and not yt_url:
+        log("Missing YT_URL or STREAM_URL")
         return
+    if not output_urls:
+        log("Missing OUTPUT_URLS")
+        return
+    if stream_url:
+        log(f"Using direct stream URL (yt-dlp bypassed)")
     env = os.environ.copy()
     log(f"Starting restream: {yt_url}")
     while True:
