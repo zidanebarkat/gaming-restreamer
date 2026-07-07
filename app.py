@@ -16,9 +16,18 @@ def setup_cookies():
     if cookies_b64:
         try:
             data = json.loads(base64.b64decode(cookies_b64).decode())
-            with open('/cookies.json', 'w') as f:
-                json.dump(data, f)
-            log("Cookies saved to /cookies.json")
+            with open('/cookies.txt', 'w') as f:
+                f.write("# Netscape HTTP Cookie File\n")
+                for c in data:
+                    domain = c.get('domain', '')
+                    flag = "TRUE" if domain.startswith('.') else "FALSE"
+                    path = c.get('path', '/')
+                    secure = "TRUE" if c.get('secure') else "FALSE"
+                    expires = str(int(c.get('expirationDate', 0)))
+                    name = c.get('name', '')
+                    value = c.get('value', '')
+                    f.write(f"{domain}\t{flag}\t{path}\t{secure}\t{expires}\t{name}\t{value}\n")
+            log(f"Cookies saved to /cookies.txt ({len(data)} cookies)")
         except Exception as e:
             log(f"Failed to decode cookies: {e}")
 
