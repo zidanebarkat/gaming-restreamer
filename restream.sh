@@ -3,21 +3,22 @@ YT_URL="${YT_URL:-https://www.twitch.tv/inoxtag}"
 OUTPUT_URL="${OUTPUT_URL:-}"
 
 BACKUP_STREAMERS=(
-    "https://www.twitch.tv/fifa"
-    "https://www.twitch.tv/nba"
-    "https://www.twitch.tv/ufc"
-    "https://www.twitch.tv/nfl"
-    "https://www.twitch.tv/madden"
-    "https://www.twitch.tv/nba2kleague"
-    "https://www.twitch.tv/mlb"
-    "https://www.twitch.tv/nhl"
-    "https://www.twitch.tv/wwe"
-    "https://www.twitch.tv/redbull"
-    "https://www.twitch.tv/brlive"
-    "https://www.twitch.tv/faulkner"
-    "https://www.twitch.tv/nickmercs"
-    "https://www.twitch.tv/bravado1k"
-    "https://www.twitch.tv/ej_sports"
+    "https://hello.1yallashoot.com/splayer/Live1.php"
+    "https://www.twitch.tv/xqc"
+    "https://www.twitch.tv/summit1g"
+    "https://www.twitch.tv/lirik"
+    "https://www.twitch.tv/timthetatman"
+    "https://www.twitch.tv/sodapoppin"
+    "https://www.twitch.tv/asmongold"
+    "https://www.twitch.tv/cohhcarnage"
+    "https://www.twitch.tv/chlorinequeen"
+    "https://www.twitch.tv/itmejp"
+    "https://www.twitch.tv/towelliee"
+    "https://www.twitch.tv/sacriel"
+    "https://www.twitch.tv/avoidingthepuddle"
+    "https://www.twitch.tv/quinngabletv"
+    "https://www.twitch.tv/gamesdonequick"
+    "https://www.twitch.tv/twitchrivals"
 )
 
 echo "[kick] Starting..."
@@ -32,9 +33,42 @@ ffmpeg -hide_banner -protocols 2>&1 | grep -i srt || echo "[kick] WARNING: SRT p
 echo "[kick] Checking ffmpeg version..."
 ffmpeg -version 2>&1 | head -3
 
+extract_yallashoot() {
+    local base_url="https://hello.1yallashoot.com/splayer/Live1.php"
+    echo "[kick] Fetching 1yallashoot page..." >&2
+    local embed_urls
+    embed_urls=$(curl -sL "$base_url" 2>/dev/null | grep -oP 'https://player\.simokora\.com/embed\.php\?stream=[^"'"'"'&]+' | sort -u)
+    if [ -z "$embed_urls" ]; then
+        echo "[kick] No embed URLs found on 1yallashoot" >&2
+        return 1
+    fi
+    while IFS= read -r embed; do
+        [ -z "$embed" ] && continue
+        echo "[kick] Checking embed: $embed" >&2
+        local m3u8
+        m3u8=$(curl -sL "$embed" 2>/dev/null | grep -oP 'https?://[^"'"'"'<>]+\.m3u8[^"'"'"'<>]*' | head -1)
+        if [ -n "$m3u8" ]; then
+            echo "$m3u8"
+            return 0
+        fi
+    done <<< "$embed_urls"
+    return 1
+}
+
 try_stream() {
     local url="$1"
     echo "[kick] Trying: $url" >&2
+
+    if echo "$url" | grep -qi "1yallashoot"; then
+        local m3u8
+        m3u8=$(extract_yallashoot)
+        if [ -n "$m3u8" ]; then
+            echo "$m3u8"
+            return 0
+        fi
+        return 1
+    fi
+
     local result
     result=$(yt-dlp -g --socket-timeout 15 --retries 2 "$url" 2>/dev/null | tail -1)
     if [ -n "$result" ] && ! echo "$result" | grep -qi "error\|warn"; then
