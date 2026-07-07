@@ -2,12 +2,25 @@ import subprocess
 import threading
 import os
 import sys
+import base64
+import json
 from flask import Flask
 
 app = Flask(__name__)
 
 def log(msg):
     print(f"[restream] {msg}", flush=True)
+
+def setup_cookies():
+    cookies_b64 = os.environ.get('COOKIES_B64', '')
+    if cookies_b64:
+        try:
+            data = json.loads(base64.b64decode(cookies_b64).decode())
+            with open('/cookies.json', 'w') as f:
+                json.dump(data, f)
+            log("Cookies saved to /cookies.json")
+        except Exception as e:
+            log(f"Failed to decode cookies: {e}")
 
 def start_restream():
     yt_url = os.environ.get('YT_URL', '')
@@ -39,6 +52,7 @@ def health():
     return 'OK', 200
 
 if __name__ == '__main__':
+    setup_cookies()
     t = threading.Thread(target=start_restream, daemon=True)
     t.start()
     app.run(host='0.0.0.0', port=8080)
