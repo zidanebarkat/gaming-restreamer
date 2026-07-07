@@ -17,9 +17,18 @@ while true; do
         TEE_OUTPUT+="[f=flv]${URLS[$i]}"
     done
 
-    echo "[restream] Starting yt-dlp pipe to ffmpeg..."
-    yt-dlp -f "best[height<=720]" -o - "$YT_URL" 2>/dev/null | \
-    ffmpeg -re -i pipe:0 \
+    echo "[restream] Getting stream URL via yt-dlp (android client)..."
+    STREAM_URL=$(yt-dlp -g -f "best[height<=720]" \
+        --extractor-args "youtube:player_client=android" \
+        --socket-timeout 15 \
+        "$YT_URL" 2>/tmp/yt-dlp.log | tail -1)
+    if [ -z "$STREAM_URL" ] || echo "$STREAM_URL" | grep -qi "error\|warn"; then
+        echo "[restream] Failed to get URL: $(tail -3 /tmp/yt-dlp.log)"
+        sleep 30
+        continue
+    fi
+    echo "[restream] Got stream URL, starting ffmpeg..."
+    ffmpeg -re -timeout 30000000 -i "$STREAM_URL" \
         -c copy -bsf:v h264_mp4toannexb \
         -f tee "$TEE_OUTPUT" \
         -loglevel warning -stats 2>&1
