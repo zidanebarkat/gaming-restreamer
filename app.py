@@ -9,7 +9,7 @@ from flask import Flask
 app = Flask(__name__)
 
 def log(msg):
-    print(f"[restream] {msg}", flush=True)
+    print(f"[kick] {msg}", flush=True)
 
 def setup_cookies():
     cookies_b64 = os.environ.get('COOKIES_B64', '')
@@ -34,12 +34,12 @@ def setup_cookies():
 def start_restream():
     yt_url = os.environ.get('YT_URL', '')
     stream_url = os.environ.get('STREAM_URL', '')
-    output_urls = os.environ.get('OUTPUT_URLS', '')
+    output_url = os.environ.get('OUTPUT_URL', '')
     if not stream_url and not yt_url:
         log("Missing YT_URL or STREAM_URL")
         return
-    if not output_urls:
-        log("Missing OUTPUT_URLS")
+    if not output_url:
+        log("Missing OUTPUT_URL")
         return
     if stream_url:
         log(f"Using direct stream URL (yt-dlp bypassed)")
@@ -60,7 +60,7 @@ def start_restream():
 
 @app.route('/')
 def index():
-    return 'Restream running', 200
+    return 'Kick Restream running', 200
 
 @app.route('/health')
 def health():
