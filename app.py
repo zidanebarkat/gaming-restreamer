@@ -191,7 +191,6 @@ def stop_stream():
         kill_ffmpeg()
     return jsonify({'ok': True})
 
-@app.route('/config', methods=['POST'])
 def convert_cookies(raw):
     s = raw.strip()
     if s.startswith('[') or s.startswith('{'):
@@ -216,6 +215,7 @@ def convert_cookies(raw):
             wr(f'Cookie JSON parse error: {e}')
     return s
 
+@app.route('/config', methods=['POST'])
 def update_config():
     data = request.get_json(force=True)
     cfg = load_config()
