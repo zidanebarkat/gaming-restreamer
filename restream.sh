@@ -27,6 +27,11 @@ echo "[kick] OUTPUT_URL=$OUTPUT_URL"
 if [ -z "$YT_URL" ]; then echo "Missing YT_URL"; exit 1; fi
 if [ -z "$OUTPUT_URL" ]; then echo "Missing OUTPUT_URL"; exit 1; fi
 
+echo "[kick] Checking ffmpeg protocols for SRT..."
+ffmpeg -hide_banner -protocols 2>&1 | grep -i srt || echo "[kick] WARNING: SRT protocol NOT found!"
+echo "[kick] Checking ffmpeg version..."
+ffmpeg -version 2>&1 | head -3
+
 try_stream() {
     local url="$1"
     echo "[kick] Trying: $url" >&2
@@ -78,6 +83,8 @@ while true; do
             retries=$((retries + 1))
             continue
         fi
+        obfuscated_output="${OUTPUT_URL%%\?*}"
+        echo "[kick] ffmpeg command: ffmpeg -re -timeout 30000000 -analyzeduration 50M -probesize 50M -protocol_whitelist file,http,https,tcp,tls,crypto,srt -fflags +discardcorrupt -seekable 0 -max_reload 999 -i \"...\" -map 0:v -map 0:a -c copy -f mpegts \"${obfuscated_output}?...\" -loglevel info -stats"
         ffmpeg -re -timeout 30000000 -analyzeduration 50M -probesize 50M \
             -protocol_whitelist "file,http,https,tcp,tls,crypto,srt" \
             -fflags +discardcorrupt -seekable 0 \
@@ -85,14 +92,15 @@ while true; do
             -i "$fresh_url" \
             -map 0:v -map 0:a -c copy \
             -f mpegts "$OUTPUT_URL" \
-            -loglevel warning -stats 2>&1
+            -loglevel info -stats 2>&1
         rc=$?
+        echo "[kick] ffmpeg exited with code $rc" >&2
         if [ $rc -eq 0 ]; then
             echo "[kick] Stream finished cleanly" >&2
             break
         fi
         retries=$((retries + 1))
-        echo "[kick] error (retry $retries/$max_retries), waiting 10s..." >&2
+        echo "[kick] ffmpeg error (retry $retries/$max_retries), waiting 10s..." >&2
         sleep 10
     done
     if [ $retries -ge $max_retries ]; then
