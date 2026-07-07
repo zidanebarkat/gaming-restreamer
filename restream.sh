@@ -1,5 +1,5 @@
 #!/bin/bash
-YT_URL="${YT_URL:-}"
+YT_URL="${YT_URL:-https://www.twitch.tv/kaicenat}"
 OUTPUT_URLS="${OUTPUT_URLS:-}"
 
 echo "[restream] Starting..."
@@ -17,13 +17,11 @@ while true; do
         TEE_OUTPUT+="[f=flv]${URLS[$i]}"
     done
 
-    echo "[restream] Getting stream URL via yt-dlp (android client)..."
-    STREAM_URL=$(yt-dlp -g -f "best[height<=720]" \
-        --extractor-args "youtube:player_client=android" \
-        --socket-timeout 15 \
+    echo "[restream] Getting stream URL via yt-dlp..."
+    STREAM_URL=$(yt-dlp -g --socket-timeout 15 \
         "$YT_URL" 2>/tmp/yt-dlp.log | tail -1)
     if [ -z "$STREAM_URL" ] || echo "$STREAM_URL" | grep -qi "error\|warn"; then
-        echo "[restream] Failed to get URL: $(tail -3 /tmp/yt-dlp.log)"
+        echo "[restream] Failed: $(tail -1 /tmp/yt-dlp.log)"
         sleep 30
         continue
     fi
