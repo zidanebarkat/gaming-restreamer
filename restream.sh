@@ -25,11 +25,16 @@ while true; do
         sleep 30
         continue
     fi
-    echo "[restream] Got stream URL, starting ffmpeg..."
-    ffmpeg -re -timeout 30000000 -i "$STREAM_URL" \
+    echo "[restream] Stream URL: $STREAM_URL"
+    echo "[restream] Starting ffmpeg..."
+    ffmpeg -re -timeout 30000000 -analyzeduration 50M -probesize 50M \
+        -protocol_whitelist "file,http,https,tcp,tls,crypto" \
+        -fflags +discardcorrupt -seekable 0 \
+        -max_reload 999 \
+        -i "$STREAM_URL" \
         -c copy -bsf:v h264_mp4toannexb \
-        -f tee "$TEE_OUTPUT" \
-        -loglevel warning -stats 2>&1
+        -f flv "$OUTPUT_URLS" \
+        -loglevel info -stats 2>&1
 
     echo "[restream] Stream ended, restarting in 10s..."
     sleep 10
